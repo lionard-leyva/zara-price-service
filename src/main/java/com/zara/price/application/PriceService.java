@@ -16,6 +16,6 @@ public class PriceService {
     }
 
     public Optional<Price> findApplicablePrice(long brandId, long productId, LocalDateTime applicationDate) {
-        return priceRepository.findApplicable(brandId, productId, applicationDate);
+        return Price.mostPrioritized(priceRepository.findCandidates(brandId, productId, applicationDate));
     }
 }

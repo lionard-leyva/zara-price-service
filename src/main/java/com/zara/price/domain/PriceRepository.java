@@ -1,9 +1,9 @@
 package com.zara.price.domain;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.List;
 
 public interface PriceRepository {
 
-    Optional<Price> findApplicable(long brandId, long productId, LocalDateTime applicationDate);
+    List<Price> findCandidates(long brandId, long productId, LocalDateTime applicationDate);
 }
