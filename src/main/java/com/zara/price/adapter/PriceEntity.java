@@ -44,39 +44,39 @@ class PriceEntity {
     protected PriceEntity() {
     }
 
-    Long getId() {
+    public Long getId() {
         return id;
     }
 
-    long getBrandId() {
+    public long getBrandId() {
         return brandId;
     }
 
-    long getProductId() {
+    public long getProductId() {
         return productId;
     }
 
-    int getPriceList() {
+    public int getPriceList() {
         return priceList;
     }
 
-    LocalDateTime getStartDate() {
+    public LocalDateTime getStartDate() {
         return startDate;
     }
 
-    LocalDateTime getEndDate() {
+    public LocalDateTime getEndDate() {
         return endDate;
     }
 
-    int getPriority() {
+    public int getPriority() {
         return priority;
     }
 
-    BigDecimal getPrice() {
+    public BigDecimal getPrice() {
         return price;
     }
 
-    String getCurrency() {
+    public String getCurrency() {
         return currency;
     }
 }
