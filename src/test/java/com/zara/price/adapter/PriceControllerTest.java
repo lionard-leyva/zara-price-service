@@ -1,16 +1,24 @@
 package com.zara.price.adapter;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -55,6 +63,7 @@ class PriceControllerTest {
             "2020-06-14T15:00:00, 2",
             "2020-06-14T18:30:00, 2",
             "2020-06-14T18:30:01, 1",
+            "2020-06-14T18:30:00.500, 1",
             "2020-06-15T00:00:00, 3",
             "2020-06-15T11:00:00, 3",
             "2020-06-15T11:00:01, 1",
@@ -76,12 +85,17 @@ class PriceControllerTest {
             // before the first price starts
             "1, 35455, 2020-06-13T23:59:59",
             // after the last price ends
-            "1, 35455, 2021-01-01T00:00:00"
+            "1, 35455, 2021-01-01T00:00:00",
+            // half a second after the last price ends
+            "1, 35455, 2020-12-31T23:59:59.500"
     })
     void returnsNotFoundWhenNoPriceApplies(String brandId, String productId, String applicationDate)
             throws Exception {
         mockMvc.perform(request(brandId, productId, applicationDate))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.detail").exists());
     }
 
     @ParameterizedTest(name = "brandId={0}, productId={1}, applicationDate={2} is rejected")
@@ -107,12 +121,45 @@ class PriceControllerTest {
             // malformed dates
             "1, 35455, 2020-06-14",
             "1, 35455, 14/06/2020 10:00",
-            "1, 35455, 2020-06-14T25:00:00"
+            "1, 35455, 2020-06-14T25:00:00",
+            // dates with a zone or offset are not accepted
+            "1, 35455, 2020-06-14T10:00:00Z",
+            "1, 35455, 2020-06-14T10:00:00+02:00"
     })
     void returnsBadRequestWhenParametersAreInvalid(String brandId, String productId, String applicationDate)
             throws Exception {
         mockMvc.perform(request(brandId, productId, applicationDate))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.detail").exists());
+    }
+
+    @Test
+    @Transactional
+    @Sql(statements = {
+            // another brand, same product, higher priority
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (2, '2020-06-14 00:00:00', '2020-12-31 23:59:59', 9, 35455, 9, 1.00, 'EUR')",
+            // same brand, another product, higher priority
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (1, '2020-06-14 00:00:00', '2020-12-31 23:59:59', 8, 99999, 9, 2.00, 'EUR')"
+    })
+    void doesNotMixPricesOfOtherBrandsOrProducts() throws Exception {
+        mockMvc.perform(request(ZARA, PRODUCT, "2020-06-14T16:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(2));
+
+        mockMvc.perform(request("2", PRODUCT, "2020-06-14T16:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(9));
+    }
+
+    @ParameterizedTest(name = "{0} /prices is not allowed")
+    @ValueSource(strings = {"POST", "PUT", "DELETE"})
+    void onlyAllowsGet(String method) throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.request(HttpMethod.valueOf(method), "/prices"))
+                .andExpect(status().isMethodNotAllowed());
     }
 
     private static MockHttpServletRequestBuilder request(String brandId, String productId,

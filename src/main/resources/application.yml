@@ -8,6 +8,6 @@ spring:
   jpa:
     open-in-view: false
     defer-datasource-initialization: true
-  h2:
-    console:
+  mvc:
+    problemdetails:
       enabled: true

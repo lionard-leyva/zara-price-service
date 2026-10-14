@@ -1,8 +1,8 @@
 package com.zara.price.adapter;
 
 import com.zara.price.application.PriceService;
+import com.zara.price.domain.PriceNotFoundException;
 import com.zara.price.domain.PriceQuery;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +21,9 @@ class PriceController {
     }
 
     @GetMapping
-    ResponseEntity<PriceResponse> findApplicablePrice(@ModelAttribute PriceQuery query) {
+    PriceResponse findApplicablePrice(@ModelAttribute PriceQuery query) {
         return priceService.findApplicablePrice(query)
                 .map(mapper::toResponse)
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElseThrow(() -> new PriceNotFoundException(query));
     }
 }
