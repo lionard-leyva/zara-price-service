@@ -1,8 +1,8 @@
 package com.zara.price.adapter;
 
 import com.zara.price.domain.Price;
+import com.zara.price.domain.PriceQuery;
 import com.zara.price.domain.PriceRepository;
-import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -18,9 +18,9 @@ class JpaPriceRepository implements PriceRepository {
     }
 
     @Override
-    public List<Price> findCandidates(long brandId, long productId, LocalDateTime applicationDate) {
+    public List<Price> findCandidates(PriceQuery query) {
         return springDataRepository
-                .findCandidates(brandId, productId, applicationDate)
+                .findCandidates(query.brandId(), query.productId(), query.applicationDate())
                 .stream()
                 .map(mapper::toDomain)
                 .toList();

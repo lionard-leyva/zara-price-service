@@ -1,12 +1,11 @@
 package com.zara.price.adapter;
 
 import com.zara.price.application.PriceService;
-import java.time.LocalDateTime;
-import org.springframework.format.annotation.DateTimeFormat;
+import com.zara.price.domain.PriceQuery;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -22,12 +21,8 @@ class PriceController {
     }
 
     @GetMapping
-    ResponseEntity<PriceResponse> findApplicablePrice(
-            @RequestParam long brandId,
-            @RequestParam long productId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime applicationDate) {
-
-        return priceService.findApplicablePrice(brandId, productId, applicationDate)
+    ResponseEntity<PriceResponse> findApplicablePrice(@ModelAttribute PriceQuery query) {
+        return priceService.findApplicablePrice(query)
                 .map(mapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

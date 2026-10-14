@@ -1,8 +1,8 @@
 package com.zara.price.application;
 
 import com.zara.price.domain.Price;
+import com.zara.price.domain.PriceQuery;
 import com.zara.price.domain.PriceRepository;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ public class PriceService {
         this.priceRepository = priceRepository;
     }
 
-    public Optional<Price> findApplicablePrice(long brandId, long productId, LocalDateTime applicationDate) {
-        return Price.mostPrioritized(priceRepository.findCandidates(brandId, productId, applicationDate));
+    public Optional<Price> findApplicablePrice(PriceQuery query) {
+        return Price.mostPrioritized(priceRepository.findCandidates(query));
     }
 }
