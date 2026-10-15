@@ -17,27 +17,43 @@ class PriceTest {
     private static final LocalDateTime END_OF_YEAR = LocalDateTime.of(2020, 12, 31, 23, 59, 59);
 
     @Test
+    void keepsItsValues() {
+        Price price = price(JUN_14, END_OF_YEAR, new BigDecimal("35.50"), "EUR");
+
+        assertThat(price.startDate()).isEqualTo(JUN_14);
+        assertThat(price.endDate()).isEqualTo(END_OF_YEAR);
+        assertThat(price.price()).isEqualByComparingTo("35.50");
+        assertThat(price.currency()).isEqualTo("EUR");
+    }
+
+    @Test
     void rejectsAStartDateAfterTheEndDate() {
         assertThatThrownBy(() -> price(JUN_15, JUN_14, BigDecimal.TEN, "EUR"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("startDate must not be after endDate");
     }
 
     @Test
     void acceptsAnIntervalThatStartsAndEndsAtTheSameInstant() {
-        assertThat(price(JUN_14, JUN_14, BigDecimal.TEN, "EUR")).isNotNull();
+        Price price = price(JUN_14, JUN_14, BigDecimal.TEN, "EUR");
+
+        assertThat(price.startDate()).isEqualTo(price.endDate());
     }
 
     @Test
     void rejectsANegativePrice() {
-        BigDecimal negativeAmount = BigDecimal.valueOf(-0.01);
+        BigDecimal negativeAmount = new BigDecimal("-0.01");
 
         assertThatThrownBy(() -> price(JUN_14, END_OF_YEAR, negativeAmount, "EUR"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("price must not be negative");
     }
 
     @Test
     void acceptsAFreePrice() {
-        assertThat(price(JUN_14, END_OF_YEAR, BigDecimal.ZERO, "EUR")).isNotNull();
+        Price price = price(JUN_14, END_OF_YEAR, BigDecimal.ZERO, "EUR");
+
+        assertThat(price.price()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @ParameterizedTest
@@ -45,7 +61,29 @@ class PriceTest {
     @ValueSource(strings = {"   "})
     void rejectsAMissingCurrency(String currency) {
         assertThatThrownBy(() -> price(JUN_14, END_OF_YEAR, BigDecimal.TEN, currency))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("currency is required");
+    }
+
+    @Test
+    void rejectsAMissingStartDate() {
+        assertThatThrownBy(() -> price(null, END_OF_YEAR, BigDecimal.TEN, "EUR"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("startDate is required");
+    }
+
+    @Test
+    void rejectsAMissingEndDate() {
+        assertThatThrownBy(() -> price(JUN_14, null, BigDecimal.TEN, "EUR"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("endDate is required");
+    }
+
+    @Test
+    void rejectsAMissingPrice() {
+        assertThatThrownBy(() -> price(JUN_14, END_OF_YEAR, null, "EUR"))
+                .isInstanceOf(NullPointerException.class)
+                .hasMessage("price is required");
     }
 
     private static Price price(LocalDateTime startDate, LocalDateTime endDate, BigDecimal amount, String currency) {

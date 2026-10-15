@@ -21,21 +21,37 @@ class PriceQueryTest {
         assertThat(query.applicationDate()).isEqualTo(APPLICATION_DATE);
     }
 
-    @ParameterizedTest(name = "brandId={0}, productId={1} is rejected")
-    @CsvSource({
-            "0, 35455",
-            "-1, 35455",
-            "1, 0",
-            "1, -1"
+    @ParameterizedTest(name = "brandId={0}, productId={1} -> \"{2}\"")
+    @CsvSource(delimiter = '|', value = {
+            "0     | 35455 | brandId must be positive",
+            "-1    | 35455 | brandId must be positive",
+            "1     | 0     | productId must be positive",
+            "1     | -1    | productId must be positive"
     })
-    void rejectsIdsThatAreNotPositive(long brandId, long productId) {
+    void rejectsIdsThatAreNotPositive(long brandId, long productId, String message) {
         assertThatThrownBy(() -> new PriceQuery(brandId, productId, APPLICATION_DATE))
-                .isInstanceOf(InvalidPriceQueryException.class);
+                .isInstanceOf(InvalidPriceQueryException.class)
+                .hasMessage(message);
+    }
+
+    @Test
+    void rejectsAMissingBrandId() {
+        assertThatThrownBy(() -> new PriceQuery(null, 35455L, APPLICATION_DATE))
+                .isInstanceOf(InvalidPriceQueryException.class)
+                .hasMessage("brandId is required");
+    }
+
+    @Test
+    void rejectsAMissingProductId() {
+        assertThatThrownBy(() -> new PriceQuery(1L, null, APPLICATION_DATE))
+                .isInstanceOf(InvalidPriceQueryException.class)
+                .hasMessage("productId is required");
     }
 
     @Test
     void rejectsAMissingApplicationDate() {
         assertThatThrownBy(() -> new PriceQuery(1L, 35455L, null))
-                .isInstanceOf(InvalidPriceQueryException.class);
+                .isInstanceOf(InvalidPriceQueryException.class)
+                .hasMessage("applicationDate is required");
     }
 }

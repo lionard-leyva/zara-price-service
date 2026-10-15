@@ -5,6 +5,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -56,24 +58,65 @@ class PriceApiIT {
                 .andExpect(jsonPath("$.currency").value("EUR"));
     }
 
-    @ParameterizedTest(name = "applicationDate {0} applies price list {1}")
+    @ParameterizedTest(name = "applicationDate {0} applies price list {1} at {2}")
     @CsvSource({
             // the interval start and end are inclusive
-            "2020-06-14T14:59:59, 1",
-            "2020-06-14T15:00:00, 2",
-            "2020-06-14T18:30:00, 2",
-            "2020-06-14T18:30:01, 1",
-            "2020-06-14T18:30:00.500, 1",
-            "2020-06-15T00:00:00, 3",
-            "2020-06-15T11:00:00, 3",
-            "2020-06-15T11:00:01, 1",
-            "2020-06-15T15:59:59, 1",
-            "2020-06-15T16:00:00, 4"
+            "2020-06-14T14:59:59, 1, 35.50",
+            "2020-06-14T15:00:00, 2, 25.45",
+            "2020-06-14T18:30:00, 2, 25.45",
+            "2020-06-14T18:30:01, 1, 35.50",
+            "2020-06-14T18:30:00.500, 1, 35.50",
+            "2020-06-15T00:00:00, 3, 30.50",
+            "2020-06-15T11:00:00, 3, 30.50",
+            "2020-06-15T11:00:01, 1, 35.50",
+            "2020-06-15T15:59:59, 1, 35.50",
+            "2020-06-15T16:00:00, 4, 38.95"
     })
-    void appliesIntervalBoundariesInclusively(String applicationDate, int priceList) throws Exception {
+    void appliesIntervalBoundariesInclusively(String applicationDate, int priceList, double price)
+            throws Exception {
         mockMvc.perform(request(ZARA, PRODUCT, applicationDate))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.priceList").value(priceList));
+                .andExpect(jsonPath("$.priceList").value(priceList))
+                .andExpect(jsonPath("$.price").value(price));
+    }
+
+    @Test
+    @Transactional
+    @Sql(statements = {
+            // same brand and product, same priority and start: the highest id wins
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (1, '2020-06-14 00:00:00', '2020-12-31 23:59:59', 5, 77777, 1, 5.00, 'EUR')",
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (1, '2020-06-14 00:00:00', '2020-12-31 23:59:59', 6, 77777, 1, 6.00, 'EUR')"
+    })
+    void breaksPriorityAndStartTiesWithTheHighestId() throws Exception {
+        mockMvc.perform(request(ZARA, "77777", "2020-06-14T10:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(6));
+    }
+
+    @Test
+    @Transactional
+    @Sql(statements = {
+            // later start but lower priority
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (1, '2020-06-14 00:00:00', '2020-12-31 23:59:59', 7, 77777, 0, 7.00, 'EUR')",
+            // earlier start but higher priority: must win
+            "INSERT INTO PRICES (brand_id, start_date, end_date, price_list, product_id, priority, price, curr) "
+                    + "VALUES (1, '2020-06-13 00:00:00', '2020-12-31 23:59:59', 8, 77777, 1, 8.00, 'EUR')"
+    })
+    void prefersHigherPriorityOverLaterStartThroughTheApi() throws Exception {
+        mockMvc.perform(request(ZARA, "77777", "2020-06-14T10:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(8));
+    }
+
+    @Test
+    void doesNotExposeInternalFields() throws Exception {
+        mockMvc.perform(request(ZARA, PRODUCT, "2020-06-14T10:00:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").doesNotExist())
+                .andExpect(jsonPath("$.priority").doesNotExist());
     }
 
     @ParameterizedTest(name = "brandId={0}, productId={1}, applicationDate={2} is not found")
@@ -165,15 +208,15 @@ class PriceApiIT {
     private static MockHttpServletRequestBuilder request(String brandId, String productId,
                                                          String applicationDate) {
         MockHttpServletRequestBuilder request = get("/prices");
-        if (brandId != null) {
-            request.param("brandId", brandId);
-        }
-        if (productId != null) {
-            request.param("productId", productId);
-        }
-        if (applicationDate != null) {
-            request.param("applicationDate", applicationDate);
-        }
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("brandId", brandId);
+        params.put("productId", productId);
+        params.put("applicationDate", applicationDate);
+        params.forEach((name, value) -> {
+            if (value != null) {
+                request.param(name, value);
+            }
+        });
         return request;
     }
 }

@@ -80,7 +80,7 @@ Arquitectura hexagonal con la estructura mínima. Las dependencias apuntan siemp
 src/main/java/com/zara/price/
 ├── PriceApplication.java
 ├── domain/                       // núcleo, sin Spring ni JPA
-│   ├── Price.java                // la tarifa: protege sus invariantes y decide la precedencia
+│   ├── Price.java                // la tarifa: protege sus invariantes
 │   ├── PriceQuery.java           // value object: criterios válidos para buscar una tarifa
 │   ├── PriceRepository.java      // puerto de salida
 │   ├── InvalidPriceQueryException.java
@@ -147,7 +147,7 @@ repositorio).
 |---|---|---|
 | `PriceApiIT` | Integración | Los 5 casos del enunciado, límites de intervalo, parámetros inválidos, sin resultado, métodos no permitidos y aislamiento entre marcas y productos |
 | `JpaPriceRepositoryTest` | Integración | Desempate por prioridad, fecha de inicio e id |
-| `PriceTest` | Unitario | Regla de precedencia e invariantes de `Price` |
+| `PriceTest` | Unitario | Invariantes de `Price`: fechas, precio, moneda y campos obligatorios |
 | `PriceQueryTest` | Unitario | Invariantes de `PriceQuery` |
 
 Los 5 casos del enunciado, marca 1 y producto 35455:
