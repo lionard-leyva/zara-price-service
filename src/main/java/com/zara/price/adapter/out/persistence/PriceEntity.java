@@ -1,4 +1,4 @@
-package com.zara.price.adapter;
+package com.zara.price.adapter.out.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

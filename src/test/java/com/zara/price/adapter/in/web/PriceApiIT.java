@@ -1,4 +1,4 @@
-package com.zara.price.adapter;
+package com.zara.price.adapter.in.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -22,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-class PriceControllerTest {
+class PriceApiIT {
 
     private static final String ZARA = "1";
     private static final String PRODUCT = "35455";

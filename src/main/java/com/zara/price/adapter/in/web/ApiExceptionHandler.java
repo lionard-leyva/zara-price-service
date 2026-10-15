@@ -1,4 +1,4 @@
-package com.zara.price.adapter;
+package com.zara.price.adapter.in.web;
 
 import com.zara.price.domain.InvalidPriceQueryException;
 import com.zara.price.domain.PriceNotFoundException;

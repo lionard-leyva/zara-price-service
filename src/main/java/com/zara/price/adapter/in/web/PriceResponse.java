@@ -1,4 +1,4 @@
-package com.zara.price.adapter;
+package com.zara.price.adapter.in.web;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

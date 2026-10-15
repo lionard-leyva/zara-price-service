@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDateTime;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.api.Test;
 
 class PriceQueryTest {
 
@@ -14,10 +14,10 @@ class PriceQueryTest {
 
     @Test
     void keepsItsValues() {
-        PriceQuery query = new PriceQuery(1, 35455, APPLICATION_DATE);
+        PriceQuery query = new PriceQuery(1L, 35455L, APPLICATION_DATE);
 
-        assertThat(query.brandId()).isEqualTo(1);
-        assertThat(query.productId()).isEqualTo(35455);
+        assertThat(query.brandId()).isEqualTo(1L);
+        assertThat(query.productId()).isEqualTo(35455L);
         assertThat(query.applicationDate()).isEqualTo(APPLICATION_DATE);
     }
 
@@ -35,7 +35,7 @@ class PriceQueryTest {
 
     @Test
     void rejectsAMissingApplicationDate() {
-        assertThatThrownBy(() -> new PriceQuery(1, 35455, null))
+        assertThatThrownBy(() -> new PriceQuery(1L, 35455L, null))
                 .isInstanceOf(InvalidPriceQueryException.class);
     }
 }

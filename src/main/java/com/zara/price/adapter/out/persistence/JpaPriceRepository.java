@@ -1,9 +1,10 @@
-package com.zara.price.adapter;
+package com.zara.price.adapter.out.persistence;
 
 import com.zara.price.domain.Price;
 import com.zara.price.domain.PriceQuery;
 import com.zara.price.domain.PriceRepository;
-import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -18,11 +19,11 @@ class JpaPriceRepository implements PriceRepository {
     }
 
     @Override
-    public List<Price> findCandidates(PriceQuery query) {
+    public Optional<Price> findApplicablePrice(PriceQuery query) {
         return springDataRepository
-                .findCandidates(query.brandId(), query.productId(), query.applicationDate())
+                .findApplicable(query.brandId(), query.productId(), query.applicationDate(), Limit.of(1))
                 .stream()
-                .map(mapper::toDomain)
-                .toList();
+                .findFirst()
+                .map(mapper::toDomain);
     }
 }

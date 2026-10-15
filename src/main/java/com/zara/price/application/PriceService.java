@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PriceService {
+public class PriceService implements FindApplicablePriceUseCase {
 
     private final PriceRepository priceRepository;
 
@@ -15,7 +15,8 @@ public class PriceService {
         this.priceRepository = priceRepository;
     }
 
+    @Override
     public Optional<Price> findApplicablePrice(PriceQuery query) {
-        return Price.mostPrioritized(priceRepository.findCandidates(query));
+        return priceRepository.findApplicablePrice(query);
     }
 }
